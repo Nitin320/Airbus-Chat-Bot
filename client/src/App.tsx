@@ -23,7 +23,7 @@ function App() {
     setMessages(prev => [...prev, userMessage]);
   
     try {
-      const response = await fetch("http://127.0.0.1:8000/chat", {
+      const response = await fetch("https://airbus-chat-bot.vercel.app/chat", {
         method: "POST", // ✅ Ensure this is POST
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
@@ -33,7 +33,8 @@ function App() {
       const data = await response.json();
       const botMessage = { type: 'bot', content: data.answer };
   
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev: Message[]) => [...prev, botMessage]);
+
     } catch (error) {
       console.error("Error connecting to backend:", error);
       setMessages(prev => [...prev, { type: 'bot', content: "Error: Unable to connect to server" }]);
