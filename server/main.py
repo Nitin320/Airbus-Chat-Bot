@@ -10,6 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+@app.get("/")
+async def health_check():
+    return "The health check is successful"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins (for development)

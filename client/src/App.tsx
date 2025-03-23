@@ -23,8 +23,9 @@ function App() {
     setMessages(prev => [...prev, userMessage]);
   
     try {
-      const response = await fetch("https://airbus-chat-bot.vercel.app/chat", {
+      const response = await fetch("https://chatbot-server-nult675cw-nitin320s-projects.vercel.app/chat", {
         method: "POST", // ✅ Ensure this is POST
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
       });
