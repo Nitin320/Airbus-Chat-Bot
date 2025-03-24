@@ -1,9 +1,7 @@
-fastapi
-uvicorn
+flask
 requests
-pydantic
+pymupdf
 faiss-cpu
 numpy
 sentence-transformers
-pymupdf
-mangum
+flask-cors
