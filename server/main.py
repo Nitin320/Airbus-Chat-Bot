@@ -1,26 +1,14 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from flask import Flask, request, jsonify
 import os
 import requests
 import fitz  # PyMuPDF for PDF processing
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from fastapi.middleware.cors import CORSMiddleware
+from flask_cors import CORS
 
-app = FastAPI()
-
-@app.get("/")
-async def health_check():
-    return "The health check is successful"
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (for development)
-    allow_credentials=True,
-    allow_methods=["*"],  # ✅ Ensure all methods (POST, GET, OPTIONS, etc.) are allowed
-    allow_headers=["*"],  # ✅ Allow all headers
-)
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Set your Together AI API key
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY", "4112fdd91cc387561671f0d859fa17a239d249d8387ce05a009d5e48035bacfb")
@@ -81,7 +69,6 @@ def get_ai_response(prompt, context=""):
     except Exception as e:
         return f"Error: {str(e)}"
 
-
 # Load and process PDF at startup
 PDF_PATH = "a320training.pdf"  # Set your PDF file path here
 if os.path.exists(PDF_PATH):
@@ -89,14 +76,17 @@ if os.path.exists(PDF_PATH):
     text_chunks = [extracted_text[i:i+500] for i in range(0, len(extracted_text), 500)]
     create_faiss_index(text_chunks)
 
-# Request model
-class QueryRequest(BaseModel):
-    question: str
+@app.route("/", methods=["GET"])
+def health_check():
+    return jsonify({"message": "The health check is successful"})
 
-# API route to handle chatbot queries
-@app.post("/chat")
-def chat(query: QueryRequest):
-    context = retrieve_relevant_chunks(query.question) if index else ""
-    response = get_ai_response(query.question, context)
-    return {"answer": response}
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    question = data.get("question", "")
+    context = retrieve_relevant_chunks(question) if index else ""
+    response = get_ai_response(question, context)
+    return jsonify({"answer": response})
 
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)

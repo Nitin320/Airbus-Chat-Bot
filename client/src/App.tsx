@@ -23,9 +23,9 @@ function App() {
     setMessages(prev => [...prev, userMessage]);
   
     try {
-      const response = await fetch("https://chatbot-server-nult675cw-nitin320s-projects.vercel.app/chat", {
+      const response = await fetch("http://192.168.103.167:5000/chat", {
         method: "POST", // ✅ Ensure this is POST
-        mode: "no-cors",
+        mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
       });
