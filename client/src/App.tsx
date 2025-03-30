@@ -23,7 +23,7 @@ function App() {
     setMessages(prev => [...prev, userMessage]);
   
     try {
-      const response = await fetch("http://192.168.162.167:4000/chat", {
+      const response = await fetch("https://airbus-chat-bot.onrender.com/chat", {
         method: "POST", // ✅ Ensure this is POST
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
