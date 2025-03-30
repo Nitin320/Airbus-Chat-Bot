@@ -1,92 +1,86 @@
 from flask import Flask, request, jsonify
 import os
-import requests
+import httpx
 import fitz  # PyMuPDF for PDF processing
-import faiss  # Now using faiss-cpu
-import numpy as np
-from sentence_transformers import SentenceTransformer
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Set your Together AI API key
+# Set API Key
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY", "4112fdd91cc387561671f0d859fa17a239d249d8387ce05a009d5e48035bacfb")
 TOGETHER_API_URL = "https://api.together.xyz/v1/chat/completions"
 
-# Load Sentence Transformer model for embeddings
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Load PDF and split into text chunks
+PDF_PATH = "server/a320training.pdf"
+CHUNK_SIZE = 500
+text_chunks = []
 
-# Initialize FAISS index
-index = None
-stored_texts = []
+def load_pdf():
+    """Loads the PDF and splits text into chunks"""
+    global text_chunks
+    if os.path.exists(PDF_PATH):
+        doc = fitz.open(PDF_PATH)
+        full_text = "\n".join([page.get_text("text") for page in doc])
+        text_chunks = [full_text[i:i + CHUNK_SIZE] for i in range(0, len(full_text), CHUNK_SIZE)]
 
-# Function to extract text from PDF
-def extract_text_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
-    text = "\n".join([page.get_text("text") for page in doc])
-    return text
-
-# Function to create FAISS index
-def create_faiss_index(text_chunks):
-    global index, stored_texts
-    stored_texts = text_chunks
-    embeddings = embedding_model.encode(text_chunks)
-    index = faiss.IndexFlatL2(embeddings.shape[1])
-    index.add(np.array(embeddings))
-
-# Function to retrieve relevant chunks
+# Function to retrieve relevant text (basic keyword search)
 def retrieve_relevant_chunks(query, top_k=3):
-    query_embedding = embedding_model.encode([query])
-    distances, indices = index.search(np.array(query_embedding), top_k)
-    return "\n".join([stored_texts[i] for i in indices[0]])
+    """Finds text chunks that contain the query keywords"""
+    keyword = query.lower()
+    matching_chunks = [chunk for chunk in text_chunks if keyword in chunk.lower()]
+    return "\n".join(matching_chunks[:top_k]) if matching_chunks else ""
 
 # Function to get AI response with context
 def get_ai_response(prompt, context=""):
     headers = {"Authorization": f"Bearer {TOGETHER_API_KEY}", "Content-Type": "application/json"}
     
     full_prompt = f"""
-    You are an AI assistant specializing in Airbus A320 training materials. Provide concise and informative responses based on the given context.
-    If the answer is not explicitly mentioned in the context, rely on your general knowledge to provide a reasonable response.
-    Do not mention that the answer is missing or say "the context does not provide this information."
+    You are an AI assistant specializing in Airbus A320 training materials. Use the provided context to answer.
     
     Context: {context}
     
     User: {prompt}
     Assistant:
     """
-    
     payload = {
-        "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
         "messages": [{"role": "user", "content": full_prompt}],
-        "temperature": 0.7,
-        "max_tokens": 300
+        "temperature": 0.5,
+        "max_tokens": 200
     }
-    try:
-        response = requests.post(TOGETHER_API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        return response.json().get("choices")[0]["message"]["content"]
-    except Exception as e:
-        return f"Error: {str(e)}"
+    
+    response = httpx.post(TOGETHER_API_URL, headers=headers, json=payload)
+    print(response.status_code, response.json())  # 🔍 Print full API response
 
-# Load and process PDF at startup
-PDF_PATH = "a320training.pdf"  # Set your PDF file path here
-if os.path.exists(PDF_PATH):
-    extracted_text = extract_text_from_pdf(PDF_PATH)
-    text_chunks = [extracted_text[i:i+500] for i in range(0, len(extracted_text), 500)]
-    create_faiss_index(text_chunks)
+    if response.status_code != 200:
+        return f"Error: {response.status_code} - {response.text}"
+    
+    return response.json().get("choices", [{}])[0].get("message", {}).get("content", "Error fetching response")
 
-@app.route("/", methods=["GET"])
+
+@app.route("/", methods=["GET", "POST"])
 def health_check():
-    return jsonify({"message": "The health check is successful"})
+    return jsonify({"message": "Service is running"})
 
-@app.route("/chat", methods=["POST"])
+@app.route("/chat", methods=["POST", "GET"])
 def chat():
-    data = request.json
-    question = data.get("question", "")
-    context = retrieve_relevant_chunks(question) if index else ""
+    """Handles incoming chat requests"""
+    if request.content_type != "application/json":
+        return jsonify({"error": "Unsupported Media Type. Use 'application/json'"}), 415
+
+    data = request.get_json(silent=True)
+    if not data or "question" not in data:
+        return jsonify({"error": "Invalid request. Send JSON with a 'question' field."}), 400
+
+    question = data["question"]
+    context = retrieve_relevant_chunks(question)
     response = get_ai_response(question, context)
+    
     return jsonify({"answer": response})
+
+# Load PDF at startup
+load_pdf()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=True)
