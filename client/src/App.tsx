@@ -128,7 +128,8 @@ function App() {
                     <span className="font-semibold text-sky-400">A320 Technical Assistant</span>
                   </div>
                 )}
-                <p className="text-sm md:text-base leading-relaxed">{message.content}</p>
+                <p className="text-sm md:text-base leading-relaxed whitespace-pre-line">{message.content}</p>
+
               </div>
             </div>
           ))}
