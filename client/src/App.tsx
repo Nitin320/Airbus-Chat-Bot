@@ -30,6 +30,7 @@ function App() {
       });
   
       const data = await response.json();
+      console.log("Full response:", data.answer);
       const botMessage: Message = { type: 'bot', content: data.answer };
   
       setMessages((prev: Message[]) => [...prev, botMessage]);

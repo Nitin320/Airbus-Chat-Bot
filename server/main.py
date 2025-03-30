@@ -19,10 +19,16 @@ text_chunks = []
 def load_pdf():
     """Loads the PDF and splits text into chunks"""
     global text_chunks
-    if os.path.exists(PDF_PATH):
-        doc = fitz.open(PDF_PATH)
-        full_text = "\n".join([page.get_text("text") for page in doc])
-        text_chunks = [full_text[i:i + CHUNK_SIZE] for i in range(0, len(full_text), CHUNK_SIZE)]
+    try:
+        if os.path.exists(PDF_PATH):
+            doc = fitz.open(PDF_PATH)
+            full_text = "\n".join([page.get_text("text") for page in doc])
+            text_chunks = [full_text[i:i + CHUNK_SIZE] for i in range(0, len(full_text), CHUNK_SIZE)]
+            print(f"✅ Loaded {len(text_chunks)} text chunks from PDF.")
+        else:
+            print(f"⚠️ PDF file not found at {PDF_PATH}")
+    except Exception as e:
+        print(f"❌ Error loading PDF: {e}")
 
 # Function to retrieve relevant text (basic keyword search)
 def retrieve_relevant_chunks(query, top_k=3):
@@ -47,17 +53,22 @@ def get_ai_response(prompt, context=""):
         "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.5,
-        "max_tokens": 200
+        "max_tokens": 500  # Increased for longer responses
     }
     
-    response = httpx.post(TOGETHER_API_URL, headers=headers, json=payload)
-    print(response.status_code, response.json())  # 🔍 Print full API response
-
-    if response.status_code != 200:
-        return f"Error: {response.status_code} - {response.text}"
-    
-    return response.json().get("choices", [{}])[0].get("message", {}).get("content", "Error fetching response")
-
+    try:
+        response = httpx.post(TOGETHER_API_URL, headers=headers, json=payload)
+        response_data = response.json()
+        
+        if response.status_code != 200:
+            print(f"❌ API Error {response.status_code}: {response.text}")
+            return f"Error: {response.status_code} - {response.text}"
+        
+        print(f"✅ API Response: {response_data}")
+        return response_data.get("choices", [{}])[0].get("message", {}).get("content", "Error fetching response")
+    except Exception as e:
+        print(f"❌ Exception calling API: {e}")
+        return "Error communicating with AI service"
 
 @app.route("/", methods=["GET", "POST"])
 def health_check():
@@ -83,4 +94,4 @@ def chat():
 load_pdf()
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)  # Enabled debug mode for better error tracking

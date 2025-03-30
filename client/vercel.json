@@ -1,14 +1,14 @@
 {
-    "functions": {
-      "api/*": {
-        "runtime": "nodejs22.x"
-      }
-    },
     "build": {
       "env": {
         "NODE_ENV": "production"
-      },
-      "ignoredBuildStep": "chmod +x node_modules/.bin/vite"
-    }
+      }
+    },
+    "rewrites": [
+      {
+        "source": "/(.*)",
+        "destination": "/index.html"
+      }
+    ]
   }
   
