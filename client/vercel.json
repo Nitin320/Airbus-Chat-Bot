@@ -1,11 +1,14 @@
 {
+    "functions": {
+      "api/*": {
+        "runtime": "nodejs22.x"
+      }
+    },
     "build": {
       "env": {
         "NODE_ENV": "production"
-      }
-    },
-    "scripts": {
-      "build": "chmod +x node_modules/.bin/vite && npm run build"
+      },
+      "ignoredBuildStep": "chmod +x node_modules/.bin/vite"
     }
   }
   
