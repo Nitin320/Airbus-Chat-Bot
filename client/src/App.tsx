@@ -19,22 +19,20 @@ function App() {
     e.preventDefault();
     if (!input.trim()) return;
   
-    const userMessage = { type: 'user', content: input };
+    const userMessage: Message = { type: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
   
     try {
       const response = await fetch("https://airbus-chat-bot.onrender.com/chat", {
-        method: "POST", // ✅ Ensure this is POST
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
       });
   
-  
       const data = await response.json();
-      const botMessage = { type: 'bot', content: data.answer };
+      const botMessage: Message = { type: 'bot', content: data.answer };
   
       setMessages((prev: Message[]) => [...prev, botMessage]);
-
     } catch (error) {
       console.error("Error connecting to backend:", error);
       setMessages(prev => [...prev, { type: 'bot', content: "Error: Unable to connect to server" }]);
@@ -57,6 +55,16 @@ function App() {
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
         <div className="absolute w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700"></div>
       </div>
+
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 z-[1] opacity-5 bg-blend-overlay"
+        style={{
+          backgroundImage: 'url("https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?ixlib=rb-1.2.1&auto=format&fit=crop&w=2850&q=80")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
 
       {/* Header */}
       <header className="relative z-10 bg-[#0f1623]/80 border-b border-sky-900/50 backdrop-blur-sm">
@@ -143,16 +151,6 @@ function App() {
           </button>
         </form>
       </main>
-
-      {/* Background Image */}
-      <div 
-        className="fixed inset-0 z-[1] opacity-5 bg-blend-overlay"
-        style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?ixlib=rb-1.2.1&auto=format&fit=crop&w=2850&q=80")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
     </div>
   );
 }
