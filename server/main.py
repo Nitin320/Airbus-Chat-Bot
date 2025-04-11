@@ -50,14 +50,14 @@ def get_ai_response(prompt, context=""):
     Assistant:
     """
     payload = {
-        "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.5,
         "max_tokens": 500  # Increased for longer responses
     }
     
     try:
-        response = httpx.post(TOGETHER_API_URL, headers=headers, json=payload)
+        response = httpx.post(TOGETHER_API_URL, headers=headers, json=payload, timeout=30.0)
         response_data = response.json()
         
         if response.status_code != 200:
