@@ -50,7 +50,7 @@ def get_ai_response(prompt, context=""):
     Assistant:
     """
     payload = {
-        "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
+        "model": "meta-llama/Llama-Vision-Free",
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.5,
         "max_tokens": 500  # Increased for longer responses
